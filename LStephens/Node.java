@@ -16,7 +16,7 @@
  *  GNU General Public License for more details; see <https://www.gnu.org/licenses/>.
  */
 
-package connectx.LStephens;
+/*package connectx.LStephens;
 
 import connectx.CXPlayer;
 import connectx.CXBoard;
@@ -33,8 +33,8 @@ public class Node implements CXPlayer {
 	private CXGameState yourWin;
     
 
-	/* Default empty constructor */
-    public Node() {
+
+    public Node(CXBoard board) {
     }
 
 
@@ -43,4 +43,4 @@ public class Node implements CXPlayer {
 	
 
 	
-}
+}*/

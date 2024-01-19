@@ -22,6 +22,7 @@ import connectx.CXPlayer;
 import connectx.CXBoard;
 import connectx.CXGameState;
 import connectx.CXCell;
+import connectx.CXCellState;
 import java.util.TreeSet;
 import java.util.Random;
 import java.util.Arrays;
@@ -40,6 +41,7 @@ public class LStephens implements CXPlayer {
 	private CXGameState yourWin;
 	private int  TIMEOUT;
 	private long START;
+	private int depth;
 
 	/* Default empty constructor */
 	public LStephens() {
@@ -51,32 +53,7 @@ public class LStephens implements CXPlayer {
 		myWin   = first ? CXGameState.WINP1 : CXGameState.WINP2;
 		yourWin = first ? CXGameState.WINP2 : CXGameState.WINP1;
 		TIMEOUT = timeout_in_secs;
-	}
-
-	/**
-	 * Selects a free colum on game board.
-	 * <p>
-	 * Selects a winning column (if any), otherwise selects a column (if any) 
-	 * that prevents the adversary to win with his next move. If both previous
-	 * cases do not apply, selects a random column.
-	 * </p>
-	 */
-	public int selectColumn(CXBoard B) {
-		START = System.currentTimeMillis(); // Save starting time
-
-		Integer[] L = B.getAvailableColumns();
-		int save    = L[rand.nextInt(L.length)]; // Save a random column 
-
-		try {
-			int col = singleMoveWin(B,L);
-			if(col != -1) 
-				return col;
-			else
-				return singleMoveBlock(B,L);
-		} catch (TimeoutException e) {
-			System.err.println("Timeout!!! Random column selected");
-			return save;
-		}
+		this.depth = 3;
 	}
 
 	private void checktime() throws TimeoutException {
@@ -84,59 +61,183 @@ public class LStephens implements CXPlayer {
 			throw new TimeoutException();
 	}
 
-	/**
-	 * Check if we can win in a single move
-	 *
-	 * Returns the winning column if there is one, otherwise -1
-	 */	
-	private int singleMoveWin(CXBoard B, Integer[] L) throws TimeoutException {
-    for(int i : L) {
-			checktime(); // Check timeout at every iteration
-      CXGameState state = B.markColumn(i);
-      if (state == myWin)
-        return i; // Winning column found: return immediately
-      B.unmarkColumn();
+	public int selectColumn(CXBoard B) {
+        START = System.currentTimeMillis(); // Save starting time
+
+        Integer[] L = B.getAvailableColumns();
+        int save = L[rand.nextInt(L.length)]; // Save a random column
+
+        try {
+            int col = singleMoveWin(B, L);
+            if (col != -1){
+				System.err.println("Winning Column: " + col);
+				return col;
+			}
+
+            col = singleMoveBlock(B, L);
+            if (col != -1){
+				System.err.println("Blocking Column: " + col);
+				return col;
+			}
+
+			int tmp = alphaBetaSearch(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, 3);
+			System.err.println("Alpha-Beta Column: " + tmp);
+            if (tmp != -1) {
+				if(B.fullColumn(tmp)) {
+					System.err.println("Alpha-beta search returned a full column");
+					return save;
+				}
+				else
+					return tmp;
+			} 
+			else {
+				System.err.println("Alpha-beta search returned -1");
+				return save;
+			}
+        } catch (TimeoutException e) {
+            System.err.println("Timeout!!! Random column selected"+save);
+            return save;
+        }
     }
-		return -1;
-	}
 
-	/**
-   * Check if we can block adversary's victory 
-   *
-   * Returns a blocking column if there is one, otherwise a random one
-   */
-	private int singleMoveBlock(CXBoard B, Integer[] L) throws TimeoutException {
-		TreeSet<Integer> T = new TreeSet<Integer>(); // We collect here safe column indexes
-
+	/*private int preventForcedWin(CXBoard B, Integer[] L) throws TimeoutException {
 		for(int i : L) {
 			checktime();
-			T.add(i); // We consider column i as a possible move
 			B.markColumn(i);
-
-			int j;
-			boolean stop;
-
-			for(j = 0, stop=false; j < L.length && !stop; j++) {
-				//try {Thread.sleep((int)(0.2*1000*TIMEOUT));} catch (Exception e) {} // Uncomment to test timeout
+			for(int j : L) {
 				checktime();
-				if(!B.fullColumn(L[j])) {
-					CXGameState state = B.markColumn(L[j]);
-					if (state == yourWin) {
-						T.remove(i); // We ignore the i-th column as a possible move
-						stop = true; // We don't need to check more
-					}
-					B.unmarkColumn(); // 
-				}
+				B.markColumn(j);
+				if(singleMoveBlock(B, L))
 			}
-			B.unmarkColumn();
+		}
+	}*/
+
+    private int singleMoveWin(CXBoard B, Integer[] L) throws TimeoutException {
+        for (int i : L) {
+            checktime(); // Check timeout at every iteration
+            CXGameState state = B.markColumn(i);
+
+            if (state == myWin)
+                return i; // Winning column found: return immediately
+
+            B.unmarkColumn();
+        }
+        return -1;
+    }
+
+    private int singleMoveBlock(CXBoard B, Integer[] L) throws TimeoutException {//si potrebbe migliorare diminuendo il range di i
+        int tmp = -1;
+		boolean stop = false;
+        int j;
+		for (int i : L) {
+			if(stop) break;
+            checktime();
+			if(B.fullColumn(i)) continue;
+            B.markColumn(i);
+
+            for (j = 0; j < L.length; j++) {
+				if(stop) break;
+				System.err.println("i :" + i + "j: " + j);
+                checktime();
+				if(j==i) continue;
+                if (!B.fullColumn(j)) {
+                    CXGameState state = B.markColumn(L[j]);
+                    if (state == yourWin) {
+						tmp = j;
+						stop = true;
+                    }
+                    B.unmarkColumn(); //
+                }
+            }
+            B.unmarkColumn();
+        }
+
+        return tmp;
+    }
+
+    private int alphaBetaSearch(CXBoard B, int depth, int alpha, int beta, int curCol) {
+		// Check if the search should stop at this depth or if the game is over
+		CXGameState gameState = B.gameState();
+		if (depth == 0 || !gameState.equals(CXGameState.OPEN)) {
+			// Evaluate the current game state using a heuristic function
+			return evaluateGameState(B);
 		}
 
-		if (T.size() > 0) {
-			Integer[] X = T.toArray(new Integer[T.size()]);
- 			return X[rand.nextInt(X.length)];
-		} else {
-			return L[rand.nextInt(L.length)];
+		Integer[] availableColumns = B.getAvailableColumns();
+
+		for (int col : availableColumns) {
+			// Make a move
+			B.markColumn(col);
+
+			// Recursively call alpha-beta search for the opponent's move
+			int score = -alphaBetaSearch(B, depth - 1, -beta, -alpha, curCol);
+
+			// Undo the move
+			B.unmarkColumn();
+
+			// Update alpha if we found a better move
+			if (score > alpha) {
+				alpha = score;
+				curCol = col;
+			}
+
+			// Perform pruning
+			if (alpha >= beta) {
+				break;  // Beta cut-off
+			}
 		}
+
+		return curCol;
+	}
+
+	private int evaluateGameState(CXBoard B) {
+		int playerScore = 0;
+
+		for (int col : B.getAvailableColumns()) {
+			int row = getTopRow(col, B);  // Find the top empty row in the column
+
+			// Check potential winning configurations
+			int horizontalScore = countConsecutivePieces(B, row, col, 0, 1) + countConsecutivePieces(B, row, col, 0, -1);  // Horizontal
+			int verticalScore = countConsecutivePieces(B, row, col, 1, 0);  // Vertical
+			int diagonal1Score = countConsecutivePieces(B, row, col, 1, 1) + countConsecutivePieces(B, row, col, -1, -1);  // Diagonal \
+			int diagonal2Score = countConsecutivePieces(B, row, col, 1, -1) + countConsecutivePieces(B, row, col, -1, 1);  // Diagonal /
+
+			// Calculate the total score for the move
+			int moveScore = horizontalScore + verticalScore + diagonal1Score + diagonal2Score;
+
+			// Update the player's score
+			if (moveScore > playerScore) {
+				playerScore = moveScore;
+			}
+		}
+
+		return playerScore;
+	}
+
+	private int countConsecutivePieces(CXBoard B, int row, int col, int rowIncrement, int colIncrement) {
+		int consecutivePieces = 0;
+		int currentRow = row;
+		int currentCol = col;
+		CXBoard C = B.copy();
+
+		// Count the number of consecutive pieces in the given direction
+		while (currentRow >= 0 && currentRow < C.M && currentCol >= 0 && currentCol < C.N && C.cellState(currentRow, currentCol) == C.cellState(row, col)) {
+			consecutivePieces++;
+			currentRow += rowIncrement;
+			currentCol += colIncrement;
+		}
+
+		return consecutivePieces;
+	}
+
+	public int getTopRow(int col, CXBoard B) throws IllegalStateException {
+		CXCellState[][] board = B.getBoard();
+		for(int i = 0; i < B.M; i++) {
+			if(board[i][col] == CXCellState.FREE) {
+				return i;
+			}
+		}
+		throw new IllegalStateException("Column " + col + " is full");
 	}
 
 	public String playerName() {
