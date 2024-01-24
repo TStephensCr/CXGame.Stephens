@@ -125,33 +125,40 @@ public class LStephens implements CXPlayer {
         return -1;
     }
 
-    private int singleMoveBlock(CXBoard B, Integer[] L) throws TimeoutException {//si potrebbe migliorare diminuendo il range di i
+    private int singleMoveBlock(CXBoard B, Integer[] L) throws TimeoutException {//un po' grottesco come algoritmo ma funziona
         int tmp = -1;
-		boolean stop = false;
-        int j;
+		boolean found = false;
+		int randomVal = L[rand.nextInt(L.length)];
+		int randomVal2;
+		B.markColumn(randomVal); 
 		for (int i : L) {
-			if(stop) break;
-            checktime();
-			if(B.fullColumn(i)) continue;
-            B.markColumn(i);
-
-            for (j = 0; j < L.length; j++) {
-				if(stop) break;
-				System.err.println("i :" + i + "j: " + j);
-                checktime();
-				if(j==i) continue;
-                if (!B.fullColumn(j)) {
-                    CXGameState state = B.markColumn(L[j]);
-                    if (state == yourWin) {
-						tmp = j;
-						stop = true;
-                    }
-                    B.unmarkColumn(); //
-                }
-            }
-            B.unmarkColumn();
+			System.err.println("Ciclo for: " + i);
+			if(B.fullColumn(i))
+				continue;
+			CXGameState state = B.markColumn(i);
+			if(state == yourWin) {
+				tmp = i;
+				B.unmarkColumn();
+				found = true;
+				break;
+			}
+			B.unmarkColumn();
         }
-
+		B.unmarkColumn();
+		if(!found){
+			do{
+				randomVal2 = L[rand.nextInt(L.length)];
+			}while(randomVal2 == randomVal && !B.fullColumn(randomVal2));
+			B.markColumn(randomVal2);
+			CXGameState state = B.markColumn(randomVal);
+			if(state == yourWin) {
+				tmp = randomVal;
+			}
+			B.unmarkColumn();
+			B.unmarkColumn();
+			System.err.println("Random1: " + randomVal);
+			System.err.println("Random2: " + randomVal2);
+		}
         return tmp;
     }
 
