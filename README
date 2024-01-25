@@ -30,3 +30,10 @@ CXPlayerTester application:
 - Verbose output and customized timeout (1 sec) and number of game repetitions (10 rounds)
 
 	java -cp ".." connectx.CXPlayerTester 6 7 4 connectx.L0.L0 connectx.L1.L1 -v -t 1 -r 10
+
+
+
+
+Note:
+-alpha-beta ora va con la semplice euristica di preferire mosse al centro.
+-Si blocca però all'ultima mossa possibile, quando la board è quasi piena

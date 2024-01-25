@@ -42,6 +42,8 @@ public class LStephens implements CXPlayer {
 	private int  TIMEOUT;
 	private long START;
 	private int depth;
+	private boolean first;
+	private int height, width;
 
 	/* Default empty constructor */
 	public LStephens() {
@@ -53,7 +55,10 @@ public class LStephens implements CXPlayer {
 		myWin   = first ? CXGameState.WINP1 : CXGameState.WINP2;
 		yourWin = first ? CXGameState.WINP2 : CXGameState.WINP1;
 		TIMEOUT = timeout_in_secs;
-		this.depth = 3;
+		this.depth = 2;
+		this.first = first;
+		this.height = M;
+		this.width = N;
 	}
 
 	private void checktime() throws TimeoutException {
@@ -80,15 +85,27 @@ public class LStephens implements CXPlayer {
 				return col;
 			}
 
-			int tmp = alphaBetaSearch(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, 3);
+			int albe = -1;
+			int tmp = -1;
+			for(int i : L){
+				if(B.fullColumn(i))
+					continue;
+				B.markColumn(i);
+				albe = alphaBetaSearch(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, L.length/2);
+				if(albe > tmp){
+					tmp = albe;
+					col = i;
+				}
+				B.unmarkColumn();
+			}
 			System.err.println("Alpha-Beta Column: " + tmp);
-            if (tmp != -1) {
-				if(B.fullColumn(tmp)) {
+            if (col != -1) {
+				if(B.fullColumn(col)) {
 					System.err.println("Alpha-beta search returned a full column");
 					return save;
 				}
 				else
-					return tmp;
+					return col;
 			} 
 			else {
 				System.err.println("Alpha-beta search returned -1");
@@ -99,18 +116,6 @@ public class LStephens implements CXPlayer {
             return save;
         }
     }
-
-	/*private int preventForcedWin(CXBoard B, Integer[] L) throws TimeoutException {
-		for(int i : L) {
-			checktime();
-			B.markColumn(i);
-			for(int j : L) {
-				checktime();
-				B.markColumn(j);
-				if(singleMoveBlock(B, L))
-			}
-		}
-	}*/
 
     private int singleMoveWin(CXBoard B, Integer[] L) throws TimeoutException {
         for (int i : L) {
@@ -132,7 +137,6 @@ public class LStephens implements CXPlayer {
 		int randomVal2;
 		B.markColumn(randomVal); 
 		for (int i : L) {
-			System.err.println("Ciclo for: " + i);
 			if(B.fullColumn(i))
 				continue;
 			CXGameState state = B.markColumn(i);
@@ -156,13 +160,12 @@ public class LStephens implements CXPlayer {
 			}
 			B.unmarkColumn();
 			B.unmarkColumn();
-			System.err.println("Random1: " + randomVal);
-			System.err.println("Random2: " + randomVal2);
 		}
         return tmp;
     }
 
-    private int alphaBetaSearch(CXBoard B, int depth, int alpha, int beta, int curCol) {
+    private int alphaBetaSearch(CXBoard B, int depth, int alpha, int beta, int curCol) throws TimeoutException {
+		checktime();
 		// Check if the search should stop at this depth or if the game is over
 		CXGameState gameState = B.gameState();
 		if (depth == 0 || !gameState.equals(CXGameState.OPEN)) {
@@ -194,57 +197,28 @@ public class LStephens implements CXPlayer {
 			}
 		}
 
-		return curCol;
+		System.err.println("Alpha: " + alpha);
+		return alpha;  // Return the best score found
 	}
 
 	private int evaluateGameState(CXBoard B) {
 		int playerScore = 0;
-
-		for (int col : B.getAvailableColumns()) {
-			int row = getTopRow(col, B);  // Find the top empty row in the column
-
-			// Check potential winning configurations
-			int horizontalScore = countConsecutivePieces(B, row, col, 0, 1) + countConsecutivePieces(B, row, col, 0, -1);  // Horizontal
-			int verticalScore = countConsecutivePieces(B, row, col, 1, 0);  // Vertical
-			int diagonal1Score = countConsecutivePieces(B, row, col, 1, 1) + countConsecutivePieces(B, row, col, -1, -1);  // Diagonal \
-			int diagonal2Score = countConsecutivePieces(B, row, col, 1, -1) + countConsecutivePieces(B, row, col, -1, 1);  // Diagonal /
-
-			// Calculate the total score for the move
-			int moveScore = horizontalScore + verticalScore + diagonal1Score + diagonal2Score;
-
-			// Update the player's score
-			if (moveScore > playerScore) {
-				playerScore = moveScore;
+		CXCell[] MC = B.getMarkedCells();
+		CXCellState check;
+		int centerColumn = width/2;
+		int distanceToCenter;
+		if(first)
+			check = CXCellState.P1;
+		else
+			check = CXCellState.P2;
+		for(CXCell c : MC) {
+			if(B.getBoard()[c.i][c.j] == check){
+				distanceToCenter= Math.abs(centerColumn - c.j);
+				playerScore += (width - distanceToCenter) + 1;
 			}
 		}
-
+			
 		return playerScore;
-	}
-
-	private int countConsecutivePieces(CXBoard B, int row, int col, int rowIncrement, int colIncrement) {
-		int consecutivePieces = 0;
-		int currentRow = row;
-		int currentCol = col;
-		CXBoard C = B.copy();
-
-		// Count the number of consecutive pieces in the given direction
-		while (currentRow >= 0 && currentRow < C.M && currentCol >= 0 && currentCol < C.N && C.cellState(currentRow, currentCol) == C.cellState(row, col)) {
-			consecutivePieces++;
-			currentRow += rowIncrement;
-			currentCol += colIncrement;
-		}
-
-		return consecutivePieces;
-	}
-
-	public int getTopRow(int col, CXBoard B) throws IllegalStateException {
-		CXCellState[][] board = B.getBoard();
-		for(int i = 0; i < B.M; i++) {
-			if(board[i][col] == CXCellState.FREE) {
-				return i;
-			}
-		}
-		throw new IllegalStateException("Column " + col + " is full");
 	}
 
 	public String playerName() {
