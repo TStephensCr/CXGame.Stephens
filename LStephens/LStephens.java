@@ -135,6 +135,7 @@ public class LStephens implements CXPlayer {
 		boolean found = false;
 		int randomVal = L[rand.nextInt(L.length)];
 		int randomVal2;
+		Integer[] L2 = B.getAvailableColumns();
 		B.markColumn(randomVal); 
 		for (int i : L) {
 			if(B.fullColumn(i))
@@ -150,6 +151,8 @@ public class LStephens implements CXPlayer {
         }
 		B.unmarkColumn();
 		if(!found){
+			if(L2.length == 1)
+				return tmp;
 			do{
 				randomVal2 = L[rand.nextInt(L.length)];
 			}while(randomVal2 == randomVal && !B.fullColumn(randomVal2));

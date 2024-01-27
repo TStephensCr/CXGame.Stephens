@@ -36,4 +36,3 @@ CXPlayerTester application:
 
 Note:
 -alpha-beta ora va con la semplice euristica di preferire mosse al centro.
--Si blocca però all'ultima mossa possibile, quando la board è quasi piena
