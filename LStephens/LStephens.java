@@ -1,21 +1,3 @@
-/*
- *  Copyright (C) 2022 Lamberto Colazzo
- *  
- *  This file is part of the ConnectX software developed for the
- *  Intern ship of the course "Information technology", University of Bologna
- *  A.Y. 2021-2022.
- *
- *  ConnectX is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This  is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details; see <https://www.gnu.org/licenses/>.
- */
-
 package connectx.LStephens;
 
 import connectx.CXPlayer;
@@ -28,13 +10,6 @@ import java.util.Random;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Software player only a bit smarter than random.
- * <p>
- * It can detect a single-move win or loss. In all the other cases behaves
- * randomly.
- * </p>
- */
 public class LStephens implements CXPlayer {
 	private Random rand;
 	private CXGameState myWin;
@@ -45,14 +20,12 @@ public class LStephens implements CXPlayer {
 	private boolean first;
 	private int height, width;
 	private boolean blackList[] = new boolean[100];
-	private static final int[] WEIGHTS = {0, 1, 10, 100, 1000};
 
 	/* Default empty constructor */
 	public LStephens() {
 	}
 
 	public void initPlayer(int M, int N, int K, boolean first, int timeout_in_secs) {
-		// New random seed for each game
 		rand    = new Random(System.currentTimeMillis());
 		myWin   = first ? CXGameState.WINP1 : CXGameState.WINP2;
 		yourWin = first ? CXGameState.WINP2 : CXGameState.WINP1;
@@ -69,9 +42,11 @@ public class LStephens implements CXPlayer {
 			throw new TimeoutException();
 	}
 
+	/***************** MAIN FUNCTION *********************/
+
 	public int selectColumn(CXBoard B) {
 		System.err.println("-----------TURN-----------");	
-        START = System.currentTimeMillis(); // Save starting time
+        START = System.currentTimeMillis();
         Integer[] L = B.getAvailableColumns();
 		int save = L[rand.nextInt(L.length)];
 		/*refreshBlackList(B, L);
@@ -131,6 +106,8 @@ public class LStephens implements CXPlayer {
         }
     }
 
+	/***************** HELPER FUNCTIONS *********************/
+
     private int singleMoveWin(CXBoard B, Integer[] L) throws TimeoutException {
         for (int i : L) {
             checktime(); // Check timeout at every iteration
@@ -179,7 +156,6 @@ public class LStephens implements CXPlayer {
 			B.unmarkColumn();
 		}
 
-		System.err.println("Blocking Column found: "+found+" randomVal: "+randomVal+" randomVal2 "+randomVal2+" returns: " + tmp);
         return tmp;
     }
 
@@ -205,6 +181,8 @@ public class LStephens implements CXPlayer {
 		}
 	}
 
+	/***************** ALPHA-BETA SEARCH *********************/
+
     private int alphaBetaSearch(CXBoard B, int depth, int alpha, int beta, int curCol, boolean first) throws TimeoutException {
 		checktime();
 		
@@ -229,8 +207,10 @@ public class LStephens implements CXPlayer {
 				if(B.fullColumn(columnOrder[x]))
 					continue;
 				B.markColumn(columnOrder[x]);
+				System.err.println("Marked column: " + columnOrder[x]);
 				int eval = alphaBetaSearch(B, depth - 1, alpha, beta, curCol, false);
 				B.unmarkColumn();
+				System.err.println("Unmarked column: " + columnOrder[x]);
 				maxEval = Math.max(maxEval, eval);
 				alpha = Math.max(alpha, eval);
 				if(beta <= alpha)
@@ -243,8 +223,10 @@ public class LStephens implements CXPlayer {
 				if(B.fullColumn(columnOrder[x]))
 					continue;
 				B.markColumn(columnOrder[x]);
+				System.err.println("Marked column: " + columnOrder[x]);
 				int eval = alphaBetaSearch(B, depth - 1, alpha, beta, curCol, true);
 				B.unmarkColumn();
+				System.err.println("Unmarked column: " + columnOrder[x]);
 				minEval = Math.min(minEval, eval);
 				beta = Math.min(beta, eval);
 				if(beta <= alpha)
@@ -253,6 +235,8 @@ public class LStephens implements CXPlayer {
 			return minEval;
 		} 
 	}
+
+	/***************** EVALUATION FUNCTIONS *********************/
 
 	public int evaluateBoard(CXBoard B) {
         int player1Score = calculatePlayerScore(B, CXCellState.P1);
@@ -270,20 +254,40 @@ public class LStephens implements CXPlayer {
 			if(B.getBoard()[c.i][c.j] == player){
 				// Check horizontal
 				playerScore += calculateScoreInDirection(B, c.i, c.j, 0, 1, player);
+				playerScore += calculateScoreInDirection(B, c.i, c.j, 0, -1, player);
 				// Check vertical
 				playerScore += calculateScoreInDirection(B, c.i, c.j, 1, 0, player);
+				playerScore += calculateScoreInDirection(B, c.i, c.j, -1, 0, player);
 				// Check diagonal (bottom-left to top-right)
 				playerScore += calculateScoreInDirection(B, c.i, c.j, -1, 1, player);
+				playerScore += calculateScoreInDirection(B, c.i, c.j, 1, -1, player);
 				// Check diagonal (top-left to bottom-right)
 				playerScore += calculateScoreInDirection(B, c.i, c.j, 1, 1, player);
+				playerScore += calculateScoreInDirection(B, c.i, c.j, -1, -1, player);
 			}
 		}
+
+		CXCellState[][] C = B.getBoard();
+		/*for(int i=0;i<height;i++){
+			System.err.println("Row "+i+":");
+			for(int j=0;j<width;j++){
+				if(C[i][j] == CXCellState.FREE)
+					System.err.print(" / ");
+				if(C[i][j] == CXCellState.P1)
+					System.err.print(" X ");
+				if(C[i][j] == CXCellState.P2)
+					System.err.print(" O ");
+			}
+			System.err.println("\n");
+		}*/
+
 		return playerScore;
 	}
 
     private int calculateScoreInDirection(CXBoard B, int row, int col, int rowDirection, int colDirection, CXCellState player) {
         int length = 0;
-
+		row += rowDirection;
+        col += colDirection;
         // Count consecutive chips in the specified direction
         while (isValidPosition(B, row, col) && B.cellState(row, col) == player) {
             length++;
@@ -292,13 +296,14 @@ public class LStephens implements CXPlayer {
         }
 
         // Calculate the weighted score based on the length of connected chips
-        return WEIGHTS[Math.min(length, WEIGHTS.length - 1)];
+        return (int) Math.pow(2, length);
     }
 
     private static boolean isValidPosition(CXBoard B, int row, int col) {
         return row >= 0 && row < B.M && col >= 0 && col < B.N;
     }
 
+	/***************** OTHER *********************/
 
 	public String playerName() {
 		return "LStephens";

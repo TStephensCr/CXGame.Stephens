@@ -35,4 +35,5 @@ CXPlayerTester application:
 
 
 Note:
--implememntato euristica link, ma non batto neanche L1 ancora
+-implememntato euristica del link, ma non batto neanche L1 ancora
+-non capisco dove sbaglio, se in alpha-beta o nella valutazione della board
