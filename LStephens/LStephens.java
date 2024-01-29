@@ -45,6 +45,7 @@ public class LStephens implements CXPlayer {
 	private boolean first;
 	private int height, width;
 	private boolean blackList[] = new boolean[100];
+	private static final int[] WEIGHTS = {0, 1, 10, 100, 1000};
 
 	/* Default empty constructor */
 	public LStephens() {
@@ -73,16 +74,16 @@ public class LStephens implements CXPlayer {
         START = System.currentTimeMillis(); // Save starting time
         Integer[] L = B.getAvailableColumns();
 		int save = L[rand.nextInt(L.length)];
-		refreshBlackList(B, L);
+		/*refreshBlackList(B, L);
 		System.err.println("Blacklist done");
 		for(int i : L){
 			save = L[rand.nextInt(L.length)]; // Save a random column
 			if(!blackList[save])
 				break;
-		}
+		}*/
 
         try {
-            int col = singleMoveWin(B, L);
+            /*int col = singleMoveWin(B, L);
             if (col != -1){
 				System.err.println("Winning Column: " + col);
 				return col;
@@ -92,15 +93,15 @@ public class LStephens implements CXPlayer {
             if (col != -1){
 				System.err.println("Blocking Column: " + col);
 				return col;
-			}
-
+			}*/
+			int col = -1;
 			int albe = -1;
 			int tmp = -1;
 			for(int i : L){
 				if(B.fullColumn(i))
 					continue;
 				B.markColumn(i);
-				albe = alphaBetaSearch(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, L.length/2);
+				albe = alphaBetaSearch(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, L.length/2, first);
 				if(albe > tmp){
 					tmp = albe;
 					col = i;
@@ -204,70 +205,100 @@ public class LStephens implements CXPlayer {
 		}
 	}
 
-    private int alphaBetaSearch(CXBoard B, int depth, int alpha, int beta, int curCol) throws TimeoutException {
+    private int alphaBetaSearch(CXBoard B, int depth, int alpha, int beta, int curCol, boolean first) throws TimeoutException {
 		checktime();
 		
-		// Check if the search should stop at this depth or if the game is over
+		// Final depth reached or game ended
 		CXGameState gameState = B.gameState();
 		if (depth == 0 || !gameState.equals(CXGameState.OPEN)) {
-			// Evaluate the current game state using a heuristic function
-			return evaluateGameState(B);
+			System.err.println("Returning evaluation: " + evaluateBoard(B));
+			CXCell lastMove = B.getLastMove();
+			System.err.println("Last move: " + lastMove.i + " " + lastMove.j);
+			return evaluateBoard(B);
 		}
 		
+		//explore central moves first
 		int columnOrder[] = new int[width];
 		for(int i = 0; i < width; i++){
 			columnOrder[i] = width/2 + (1-2*(i%2))*(i+1)/2; 
 		}
 
-		//Integer[] availableColumns = B.getAvailableColumns();
-
-		for (int x = 0; x < width; x++) {
-			if(B.fullColumn(columnOrder[x]))
-				continue;
-			// Make a move
-			B.markColumn(columnOrder[x]);
-
-			// Recursively call alpha-beta search for the opponent's move
-			int score = -alphaBetaSearch(B, depth - 1, -beta, -alpha, curCol);
-
-			// Undo the move
-			B.unmarkColumn();
-
-			// Update alpha if we found a better move
-			if (score > alpha) {
-				alpha = score;
-				curCol = columnOrder[x];
+		if(first){
+			int maxEval = Integer.MIN_VALUE;
+			for(int x = 0; x < width; x++){
+				if(B.fullColumn(columnOrder[x]))
+					continue;
+				B.markColumn(columnOrder[x]);
+				int eval = alphaBetaSearch(B, depth - 1, alpha, beta, curCol, false);
+				B.unmarkColumn();
+				maxEval = Math.max(maxEval, eval);
+				alpha = Math.max(alpha, eval);
+				if(beta <= alpha)
+					break;
 			}
-
-			// Perform pruning
-			if (alpha >= beta) {
-				break;  // Beta cut-off
+			return maxEval;
+		}else{
+			int minEval = Integer.MAX_VALUE;
+			for(int x = 0; x < width; x++){
+				if(B.fullColumn(columnOrder[x]))
+					continue;
+				B.markColumn(columnOrder[x]);
+				int eval = alphaBetaSearch(B, depth - 1, alpha, beta, curCol, true);
+				B.unmarkColumn();
+				minEval = Math.min(minEval, eval);
+				beta = Math.min(beta, eval);
+				if(beta <= alpha)
+					break;
 			}
-		}
-
-		System.err.println("Alpha: " + alpha);
-		return alpha;  // Return the best score found
+			return minEval;
+		} 
 	}
 
-	private int evaluateGameState(CXBoard B) {
+	public int evaluateBoard(CXBoard B) {
+        int player1Score = calculatePlayerScore(B, CXCellState.P1);
+        int player2Score = calculatePlayerScore(B, CXCellState.P2);
+
+        return player1Score - player2Score;
+    }
+
+	private int calculatePlayerScore(CXBoard B, CXCellState player) {
 		int playerScore = 0;
 		CXCell[] MC = B.getMarkedCells();
-		CXCellState check;
-		int centerColumn = width/2;
-		int distanceToCenter;
-		if(first)
-			check = CXCellState.P1;
-		else
-			check = CXCellState.P2;
-		for(CXCell c : MC) {
-			if(B.getBoard()[c.i][c.j] == check){
-				distanceToCenter= Math.abs(centerColumn - c.j);
-				playerScore += (width - distanceToCenter) + 1;
+		int centerColumn = width / 2;
+
+		for(CXCell c : MC){
+			if(B.getBoard()[c.i][c.j] == player){
+				// Check horizontal
+				playerScore += calculateScoreInDirection(B, c.i, c.j, 0, 1, player);
+				// Check vertical
+				playerScore += calculateScoreInDirection(B, c.i, c.j, 1, 0, player);
+				// Check diagonal (bottom-left to top-right)
+				playerScore += calculateScoreInDirection(B, c.i, c.j, -1, 1, player);
+				// Check diagonal (top-left to bottom-right)
+				playerScore += calculateScoreInDirection(B, c.i, c.j, 1, 1, player);
 			}
 		}
-			
 		return playerScore;
 	}
+
+    private int calculateScoreInDirection(CXBoard B, int row, int col, int rowDirection, int colDirection, CXCellState player) {
+        int length = 0;
+
+        // Count consecutive chips in the specified direction
+        while (isValidPosition(B, row, col) && B.cellState(row, col) == player) {
+            length++;
+            row += rowDirection;
+            col += colDirection;
+        }
+
+        // Calculate the weighted score based on the length of connected chips
+        return WEIGHTS[Math.min(length, WEIGHTS.length - 1)];
+    }
+
+    private static boolean isValidPosition(CXBoard B, int row, int col) {
+        return row >= 0 && row < B.M && col >= 0 && col < B.N;
+    }
+
 
 	public String playerName() {
 		return "LStephens";

@@ -35,4 +35,4 @@ CXPlayerTester application:
 
 
 Note:
--alpha-beta ora va con la semplice euristica di preferire mosse al centro.
+-implememntato euristica link, ma non batto neanche L1 ancora
