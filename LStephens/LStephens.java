@@ -44,6 +44,7 @@ public class LStephens implements CXPlayer {
 	private int depth;
 	private boolean first;
 	private int height, width;
+	private boolean blackList[] = new boolean[100];
 
 	/* Default empty constructor */
 	public LStephens() {
@@ -59,6 +60,7 @@ public class LStephens implements CXPlayer {
 		this.first = first;
 		this.height = M;
 		this.width = N;
+		
 	}
 
 	private void checktime() throws TimeoutException {
@@ -67,10 +69,17 @@ public class LStephens implements CXPlayer {
 	}
 
 	public int selectColumn(CXBoard B) {
+		System.err.println("-----------TURN-----------");	
         START = System.currentTimeMillis(); // Save starting time
-
         Integer[] L = B.getAvailableColumns();
-        int save = L[rand.nextInt(L.length)]; // Save a random column
+		int save = L[rand.nextInt(L.length)];
+		refreshBlackList(B, L);
+		System.err.println("Blacklist done");
+		for(int i : L){
+			save = L[rand.nextInt(L.length)]; // Save a random column
+			if(!blackList[save])
+				break;
+		}
 
         try {
             int col = singleMoveWin(B, L);
@@ -98,14 +107,18 @@ public class LStephens implements CXPlayer {
 				}
 				B.unmarkColumn();
 			}
-			System.err.println("Alpha-Beta Column: " + tmp);
+			System.err.println("Alpha-Beta Column: " + col);
             if (col != -1) {
 				if(B.fullColumn(col)) {
 					System.err.println("Alpha-beta search returned a full column");
 					return save;
 				}
-				else
+				else if(!blackList[col])
 					return col;
+				else {
+					System.err.println("blacklist caught "+col);
+					return save;
+				}
 			} 
 			else {
 				System.err.println("Alpha-beta search returned -1");
@@ -130,15 +143,15 @@ public class LStephens implements CXPlayer {
         return -1;
     }
 
-    private int singleMoveBlock(CXBoard B, Integer[] L) throws TimeoutException {//un po' grottesco come algoritmo ma funziona
+    private int singleMoveBlock(CXBoard B, Integer[] L) throws TimeoutException {
         int tmp = -1;
 		boolean found = false;
 		int randomVal = L[rand.nextInt(L.length)];
-		int randomVal2;
+		int randomVal2 = randomVal;
 		Integer[] L2 = B.getAvailableColumns();
 		B.markColumn(randomVal); 
 		for (int i : L) {
-			if(B.fullColumn(i))
+			if(B.fullColumn(i) || i == randomVal)
 				continue;
 			CXGameState state = B.markColumn(i);
 			if(state == yourWin) {
@@ -164,23 +177,55 @@ public class LStephens implements CXPlayer {
 			B.unmarkColumn();
 			B.unmarkColumn();
 		}
+
+		System.err.println("Blocking Column found: "+found+" randomVal: "+randomVal+" randomVal2 "+randomVal2+" returns: " + tmp);
         return tmp;
     }
 
+	private void refreshBlackList(CXBoard B, Integer[] L) {
+		if(L.length <= 1 || L == null)
+			return;
+		for(int i : L){
+			if(B.fullColumn(i))
+				continue;
+			if(B.markColumn(i) == myWin){
+				B.unmarkColumn();
+				continue;
+			}
+			if(B.fullColumn(i)){
+				B.unmarkColumn();
+				continue;
+			}
+			if(B.markColumn(i) == yourWin){
+				this.blackList[i] = true;	
+			}else this.blackList[i] = false;
+			B.unmarkColumn();
+			B.unmarkColumn();
+		}
+	}
+
     private int alphaBetaSearch(CXBoard B, int depth, int alpha, int beta, int curCol) throws TimeoutException {
 		checktime();
+		
 		// Check if the search should stop at this depth or if the game is over
 		CXGameState gameState = B.gameState();
 		if (depth == 0 || !gameState.equals(CXGameState.OPEN)) {
 			// Evaluate the current game state using a heuristic function
 			return evaluateGameState(B);
 		}
+		
+		int columnOrder[] = new int[width];
+		for(int i = 0; i < width; i++){
+			columnOrder[i] = width/2 + (1-2*(i%2))*(i+1)/2; 
+		}
 
-		Integer[] availableColumns = B.getAvailableColumns();
+		//Integer[] availableColumns = B.getAvailableColumns();
 
-		for (int col : availableColumns) {
+		for (int x = 0; x < width; x++) {
+			if(B.fullColumn(columnOrder[x]))
+				continue;
 			// Make a move
-			B.markColumn(col);
+			B.markColumn(columnOrder[x]);
 
 			// Recursively call alpha-beta search for the opponent's move
 			int score = -alphaBetaSearch(B, depth - 1, -beta, -alpha, curCol);
@@ -191,7 +236,7 @@ public class LStephens implements CXPlayer {
 			// Update alpha if we found a better move
 			if (score > alpha) {
 				alpha = score;
-				curCol = col;
+				curCol = columnOrder[x];
 			}
 
 			// Perform pruning
