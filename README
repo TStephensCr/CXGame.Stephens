@@ -34,6 +34,11 @@ CXPlayerTester application:
 
 
 
-Note:
--implememntato euristica del link, ma non batto neanche L1 ancora
--non capisco dove sbaglio, se in alpha-beta o nella valutazione della board
+
+remember:
+-considera se dare punti per length=1
+-aggiungere punti per tasselli al centro, magari con la vecchia funzione
+
+se vinci alla seconda mossa hai 10000, magari 10002 punti, ma se vinci alla quinta mossa ne puoi avere anche 10005, ecco perchè non va. Con depth 5 lui prova ad avere il punteggio massimo in 5 mosse. O trovo un modo per troncare il punteggio totalmente se trovo una win oppure trovo un modo per preferire win più veloci(FATTO)
+
+Manca capire le dinamiche delle decisioni che fa il bot, e aggiustare depth e punteggi per migliorarle
