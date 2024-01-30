@@ -45,7 +45,7 @@ public class LStephens implements CXPlayer {
 	/***************** MAIN FUNCTION *********************/
 
 	public int selectColumn(CXBoard B) {
-		System.err.println("-----------TURN-----------");	
+		System.err.println("-----------TURN-----------#########################################################################################################");	
         START = System.currentTimeMillis();
         Integer[] L = B.getAvailableColumns();
 		int save = L[rand.nextInt(L.length)];
@@ -68,7 +68,7 @@ public class LStephens implements CXPlayer {
             if (col != -1){
 				System.err.println("Blocking Column: " + col);
 				return col;
-			}*/
+			}
 			int col = -1;
 			int albe = -1;
 			int tmp = -1;
@@ -99,6 +99,9 @@ public class LStephens implements CXPlayer {
 			else {
 				System.err.println("Alpha-beta search returned -1");
 				return save;
+			}*/
+			for(int i=0;i<width;i++){//STO PROVANDO A CREARE UNA MATRICE DI PROVA PER VEDERE SE LE EVALUATION FUNZIONANO SU QUESTA
+				B.markColumn(i);
 			}
         } catch (TimeoutException e) {
             System.err.println("Timeout!!! Random column selected"+save);
@@ -189,10 +192,12 @@ public class LStephens implements CXPlayer {
 		// Final depth reached or game ended
 		CXGameState gameState = B.gameState();
 		if (depth == 0 || !gameState.equals(CXGameState.OPEN)) {
-			System.err.println("Returning evaluation: " + evaluateBoard(B));
+			int eval = evaluateBoard(B);
+			System.err.println("Returning evaluation: " + eval);
+			System.err.println(Arrays.deepToString(B.getBoard()));
 			CXCell lastMove = B.getLastMove();
 			System.err.println("Last move: " + lastMove.i + " " + lastMove.j);
-			return evaluateBoard(B);
+			return eval;
 		}
 		
 		//explore central moves first
@@ -236,7 +241,7 @@ public class LStephens implements CXPlayer {
 		} 
 	}
 
-	/***************** EVALUATION FUNCTIONS *********************/
+	/***************** EVALUATION FUNCTIONS *********************///il punteggio va cambiato direttamente quando una length viene salvata in un result
 
 	public int evaluateBoard(CXBoard B) {
         int player1Score = calculatePlayerScore(B, CXCellState.P1);
@@ -249,55 +254,132 @@ public class LStephens implements CXPlayer {
 		int playerScore = 0;
 		CXCell[] MC = B.getMarkedCells();
 		int centerColumn = width / 2;
-
-		for(CXCell c : MC){
-			if(B.getBoard()[c.i][c.j] == player){
-				// Check horizontal
-				playerScore += calculateScoreInDirection(B, c.i, c.j, 0, 1, player);
-				playerScore += calculateScoreInDirection(B, c.i, c.j, 0, -1, player);
-				// Check vertical
-				playerScore += calculateScoreInDirection(B, c.i, c.j, 1, 0, player);
-				playerScore += calculateScoreInDirection(B, c.i, c.j, -1, 0, player);
-				// Check diagonal (bottom-left to top-right)
-				playerScore += calculateScoreInDirection(B, c.i, c.j, -1, 1, player);
-				playerScore += calculateScoreInDirection(B, c.i, c.j, 1, -1, player);
-				// Check diagonal (top-left to bottom-right)
-				playerScore += calculateScoreInDirection(B, c.i, c.j, 1, 1, player);
-				playerScore += calculateScoreInDirection(B, c.i, c.j, -1, -1, player);
-			}
-		}
+		System.err.println("Entering calculatePlayerScore");
+		playerScore += horizontalScore(B, player);
+		
+		playerScore += verticalScore(B, player);
+		
+		playerScore += diagonalManager(B, player);
 
 		CXCellState[][] C = B.getBoard();
-		/*for(int i=0;i<height;i++){
-			System.err.println("Row "+i+":");
-			for(int j=0;j<width;j++){
-				if(C[i][j] == CXCellState.FREE)
-					System.err.print(" / ");
-				if(C[i][j] == CXCellState.P1)
-					System.err.print(" X ");
-				if(C[i][j] == CXCellState.P2)
-					System.err.print(" O ");
-			}
-			System.err.println("\n");
-		}*/
 
 		return playerScore;
 	}
+//return (int) Math.pow(2, length);
+    
+	private int horizontalScore(CXBoard B, CXCellState player) {
+		CXCellState[][] C = B.getBoard();
+		int length = 0;
+		int result = 0;
+		for(int i=0;i<height;i++){
+			length = 0;
+			for(int j=0;j<width;j++){
+				if(C[i][j] == player)
+					length++;
+				else{
+					if(length > 0)
+						result += length;
+					if(length >= B.X)
+						return 10000;
+					length = 0;
+				}
+			}
+		}
+		return result;
+	}
 
-    private int calculateScoreInDirection(CXBoard B, int row, int col, int rowDirection, int colDirection, CXCellState player) {
-        int length = 0;
-		row += rowDirection;
-        col += colDirection;
-        // Count consecutive chips in the specified direction
-        while (isValidPosition(B, row, col) && B.cellState(row, col) == player) {
-            length++;
-            row += rowDirection;
-            col += colDirection;
-        }
+	private int verticalScore(CXBoard B, CXCellState player) {
+		CXCellState[][] C = B.getBoard();
+		int length = 0;
+		int result = 0;
+		for(int i=0;i<width;i++){
+			length = 0;
+			for(int j=0;j<height;j++){
+				if(C[j][i] == player)
+					length++;
+				else{
+					if(length > 0)
+						result += length;
+					if(length >= B.X)
+						return 10000;
+					length = 0;
+				}
+			}
+		}
+		return result;
+	}
 
-        // Calculate the weighted score based on the length of connected chips
-        return (int) Math.pow(2, length);
-    }
+	private int diagonalManager(CXBoard B, CXCellState player) {//Serve un disegno per capire sta funzione mi sa
+		CXCellState[][] C = B.getBoard();
+		int length = 0;
+		int result = 0;
+		//diagonali verso il centro che iniziano dalle colonne di lato, ignorando le diagonali troppo corte per fare X in fila
+		for(int i=B.X-1; i<height-1; i++){
+			result += diagonalUpLeft(B, i, 0, player);
+
+			result += diagonalUpRight(B, i, width-1, player);
+			
+			result += diagonalUpLeft(B, height-1, width-1, player);
+			
+		}
+
+		//diagonali verso il centro che iniziano dalla riga più in alto, ignorando le diagonali troppo corte per fare X in fila
+		for(int i=1; i<(width-B.X+1); i++){
+			result += diagonalUpLeft(B, height-1, i, player);
+			
+			result += diagonalUpRight(B, height-1, (width-1), player);
+			
+		}
+
+		return result;
+	}
+
+	private int diagonalUpLeft(CXBoard B, int row, int col, CXCellState player) {
+		CXCellState[][] C = B.getBoard();
+		int length = 0;
+		int result = 0;
+		int i = row;
+		int j = col;
+		while(isValidPosition(B, i, j)){
+			if(C[i][j] == player)
+				length++;
+			else{
+				if(length > 0)
+					result += length;
+				if(length >= B.X)
+					return 10000;
+				length = 0;
+			}
+			i--;
+			j++;
+		}
+
+		return result;
+	}
+
+	private int diagonalUpRight(CXBoard B, int row, int col, CXCellState player) {
+		CXCellState[][] C = B.getBoard();
+		int length = 0;
+		int result = 0;
+		int i = row;
+		int j = col;
+		while(isValidPosition(B, i, j)){
+			if(C[i][j] == player)
+				length++;
+			else{
+				if(length > 0)
+					result += length;
+				if(length >= B.X)
+					return 10000;
+				length = 0;
+			}
+			i--;
+			j--;
+		}
+
+		return result;
+	}
+	
 
     private static boolean isValidPosition(CXBoard B, int row, int col) {
         return row >= 0 && row < B.M && col >= 0 && col < B.N;
@@ -309,3 +391,16 @@ public class LStephens implements CXPlayer {
 		return "LStephens";
 	}
 }
+
+
+/*
+1 2 3 4 5 6 N
+2
+3
+4
+5
+M
+
+M = number of rows
+N = number of columns
+*/
