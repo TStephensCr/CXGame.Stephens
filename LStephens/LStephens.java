@@ -50,16 +50,16 @@ public class LStephens implements CXPlayer {
         START = System.currentTimeMillis();
         Integer[] L = B.getAvailableColumns();
 		int save = L[rand.nextInt(L.length)];
-		/*refreshBlackList(B, L);
+		refreshBlackList(B, L);
 		System.err.println("Blacklist done");
 		for(int i : L){
 			save = L[rand.nextInt(L.length)]; // Save a random column
 			if(!blackList[save])
 				break;
-		}*/
+		}
 
         try {
-            /*int col = singleMoveWin(B, L);
+            int col = singleMoveWin(B, L);
             if (col != -1){
 				System.err.println("Winning Column: " + col);
 				return col;
@@ -69,13 +69,13 @@ public class LStephens implements CXPlayer {
             if (col != -1){
 				System.err.println("Blocking Column: " + col);
 				return col;
-			}*/
+			}
 
 			int columnOrder[] = new int[width];
 			for(int i = 0; i < width; i++){
 				columnOrder[i] = width/2 + (1-2*(i%2))*(i+1)/2; 
 			}
-			int col = -1;
+
 			int albe = -1;
 			int tmp = -1;
 			for(int x=0; x<width; x++){
@@ -246,7 +246,7 @@ public class LStephens implements CXPlayer {
 		}
 	}
 
-	/***************** EVALUATION FUNCTIONS *********************///il punteggio va cambiato direttamente quando una length viene salvata in un result
+	/***************** EVALUATION FUNCTIONS *********************/
 
 	public int evaluateBoard(CXBoard B, int curDepth) {
         int player1Score = calculatePlayerScore(B, CXCellState.P1);
@@ -254,7 +254,7 @@ public class LStephens implements CXPlayer {
 		System.err.println("Player 1: "+player1Score);
 		System.err.println("Player 2: "+player2Score);
 
-		int depthBonus = (maxDepth - curDepth)*100;
+		int depthBonus = (maxDepth - curDepth)*10;
     	player1Score += depthBonus;
 		player2Score += depthBonus;
 
@@ -296,7 +296,7 @@ public class LStephens implements CXPlayer {
 			if(length >= B.X)
 				return 10000;
 		}
-		return (int) Math.pow(3, result);
+		return (int) Math.pow(4, result);
 	}
 
 	private int verticalScore(CXBoard B, CXCellState player) {
@@ -321,7 +321,7 @@ public class LStephens implements CXPlayer {
 			if(length >= B.X)
 				return 10000;
 		}
-		return (int) Math.pow(3, result);
+		return (int) Math.pow(4, result);
 	}
 
 	private int diagonalManager(CXBoard B, CXCellState player) {//Serve un disegno per capire sta funzione mi sa
@@ -372,7 +372,7 @@ public class LStephens implements CXPlayer {
 		if(length >= B.X)
 			return 10000;
 		
-		return (int) Math.pow(3, result);
+		return (int) Math.pow(4, result);
 	}
 
 	private int diagonalUpRight(CXBoard B, int row, int col, CXCellState player) {
@@ -399,7 +399,7 @@ public class LStephens implements CXPlayer {
 		if(length >= B.X)
 			return 10000;
 		
-		return (int) Math.pow(3, result);
+		return (int) Math.pow(4, result);
 	}
 	
 
