@@ -22,9 +22,9 @@ public class LStephens implements CXPlayer {
 	private boolean blackList[] = new boolean[100];
 	private int depthIndex;
 	private static int maxDepth[] = {5, 2, 0};
-	private static int resultMultiplier = 10;
-	private static int winMultiplier = 10;
-	private static int depthMultiplier = 10;
+	//private static int resultMultiplier = 10;
+	//private static int winMultiplier = 20;
+	private static int depthMultiplier = 2;
 
 	/* Default empty constructor */
 	public LStephens() {
@@ -66,48 +66,62 @@ public class LStephens implements CXPlayer {
 				break;
 		}
         try {
-            /*int col = singleMoveWin(B, L);
+            int col = singleMoveWin(B, L);
             if (col != -1){
+				System.err.println("Winning column found: "+col);
 				return col;
 			}
 
             col = singleMoveBlock(B, L);
             if (col != -1){
+				System.err.println("Blocking column found: "+col);
 				return col;
-			}*/
+			}
 			checktime();
-			int col = -1;
 			int columnOrder[] = new int[width];
 			for(int i = 0; i < width; i++){
 				columnOrder[i] = width/2 + (1-2*(i%2))*(i+1)/2; 
 			}
 
 			int albe = -1;
-			int tmp = -1;
+			int tmp = 0;
 			for(int x=0; x<width; x++){
+				checktime();
 				if(B.fullColumn(columnOrder[x]))
 					continue;
 				B.markColumn(columnOrder[x]);
-				albe = alphaBetaSearch(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, L.length/2, first, 1);
+				System.err.println("Marking column "+columnOrder[x]+" from main");
+				albe = alphaBetaSearch(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, first, 1);
 				System.err.println("Column "+columnOrder[x]+" has value "+albe);
-				if(albe > tmp){
-					tmp = albe;
-					col = columnOrder[x];
+				if(first){
+					if(albe > tmp){
+						tmp = albe;
+						col = columnOrder[x];
+					}
+				}
+				else{
+					if(albe < tmp){
+						tmp = albe;
+						col = columnOrder[x];
+					}
 				}
 				B.unmarkColumn();
 			}
 			System.err.println("Selected column "+col+" with value "+tmp);
             if (col != -1) {
 				if(B.fullColumn(col)) {
+					System.err.println("Column "+col+" is full");
 					return save;
 				}
 				else if(!blackList[col])
 					return col;
 				else {
+					System.err.println("Column "+col+" is blacklisted");
 					return save;
 				}
 			} 
 			else {
+				System.err.println("No column found");
 				return save;
 			}
         } catch (TimeoutException e) {
@@ -195,18 +209,20 @@ public class LStephens implements CXPlayer {
 
 	/***************** ALPHA-BETA SEARCH *********************/
 
-    private int alphaBetaSearch(CXBoard B, int depth, int alpha, int beta, int curCol, boolean first, int curDepth){
-		int maxEval = Integer.MIN_VALUE;
-		int minEval = Integer.MAX_VALUE;
+    private int alphaBetaSearch(CXBoard B, int depth, int alpha, int beta, boolean first, int curDepth){
 	try{
 		checktime();
-		System.err.println("Entering alphaBeta");
+		//System.err.println("Entering alphaBeta");
 		// Final depth reached or game ended
 		CXGameState gameState = B.gameState();
 		if (depth == 0 || !gameState.equals(CXGameState.OPEN)) {
 			int eval = evaluateBoard(B,curDepth);
-			System.err.println("Eval :"+eval);
-			return eval;
+			//System.err.println("Eval :"+eval);
+			if (first) {
+				return (eval > alpha) ? eval : alpha;
+			} else {
+				return (eval < beta) ? eval : beta;
+			}
 		}else{
 			//explore central moves first
 			int columnOrder[] = new int[width];
@@ -215,45 +231,50 @@ public class LStephens implements CXPlayer {
 			}
 
 			if(first){
-				System.err.println("Entering first");
+				int maxEval = Integer.MIN_VALUE;
+				//System.err.println("Entering first");
 				for(int x = 0; x < width; x++){
 					if(B.fullColumn(columnOrder[x]))
 						continue;
 					B.markColumn(columnOrder[x]);
-					System.err.println("Marked column "+columnOrder[x]);
-					int eval = alphaBetaSearch(B, depth - 1, alpha, beta, curCol, false, curDepth + 1);
+					//System.err.println("Marked column "+columnOrder[x]);
+					int eval = alphaBetaSearch(B, depth - 1, alpha, beta, false, curDepth + 1);
 					B.unmarkColumn();
-					System.err.println("Unmarked column "+columnOrder[x]);
+					//System.err.println("Unmarked column "+columnOrder[x]);
 					maxEval = Math.max(maxEval, eval);
 					alpha = Math.max(alpha, eval);
 					if(beta <= alpha)
 						break;
 				}
+				System.err.println("Best value with curDepth at "+curDepth+" is "+maxEval);
 				return maxEval;
 			}else{
-				System.err.println("Entering second");
+				int minEval = Integer.MAX_VALUE;
+				//System.err.println("Entering second");
 				for(int x = 0; x < width; x++){
 					if(B.fullColumn(columnOrder[x]))
 						continue;
 					B.markColumn(columnOrder[x]);
-					System.err.println("Marked column "+columnOrder[x]);
-					int eval = alphaBetaSearch(B, depth - 1, alpha, beta, curCol, true, curDepth + 1);
+					//System.err.println("Marked column "+columnOrder[x]);
+					int eval = alphaBetaSearch(B, depth - 1, alpha, beta, true, curDepth + 1);
 					B.unmarkColumn();
-					System.err.println("Unmarked column "+columnOrder[x]);
+					//System.err.println("Unmarked column "+columnOrder[x]);
 					minEval = Math.min(minEval, eval);
 					beta = Math.min(beta, eval);
 					if(beta <= alpha)
 						break;
 				}
+				System.err.println("Best value with curDepth at "+curDepth+" is "+minEval);
 				return minEval;
 			} 
 		}
 	}catch(TimeoutException e){
 		System.err.println("Timeout in alphaBetaSearch");
-		if(first)
-			return maxEval;
-		else
-			return minEval;
+		if (first) {
+			return alpha;
+		} else {
+			return beta;
+		}
 	}
 	}
 
@@ -264,8 +285,8 @@ public class LStephens implements CXPlayer {
 			checktime();
 			int player1Score = calculatePlayerScore(B, CXCellState.P1);
 			int player2Score = calculatePlayerScore(B, CXCellState.P2);
-			System.err.println("Player 1 score: "+player1Score);
-			System.err.println("Player 2 score: "+player2Score);
+			//System.err.println("Player 1 score: "+player1Score);
+			//System.err.println("Player 2 score: "+player2Score);
 
 			/*int depthBonus = (maxDepth[depthIndex] - curDepth)*depthMultiplier;
 			player1Score += depthBonus;
@@ -310,19 +331,19 @@ public class LStephens implements CXPlayer {
 					if(C[i][j] != CXCellState.FREE)
 						if(length > 2)
 							length--;
-					if(length > 1)
-						result += length;
-					//if(length >= B.X)
-						//return (int) Math.pow(winMultiplier, B.X);
+					//if(length > 1)
+						//result += length;
+					if(length >= B.X)
+						return B.X*B.X;
 					length = 0;
 				}
 			}
-			if(length > 1)
-				result += length;
-			//if(length >= B.X)
-				//return (int) Math.pow(winMultiplier, B.X);
+			//if(length > 1)
+				//result += length;
+			if(length >= B.X)
+				return B.X*B.X;
 		}
-		return (int) Math.pow(resultMultiplier, result);
+		return 0;//return result*(result-1);
 	}
 
 	private int verticalScore(CXBoard B, CXCellState player) {
@@ -338,19 +359,19 @@ public class LStephens implements CXPlayer {
 					if(C[j][i] != CXCellState.FREE)
 						if(length >= 2)
 							length--;
-					if(length > 1)
-						result += length;
-					//if(length >= B.X)
-						//return (int) Math.pow(winMultiplier, B.X);
+					//if(length > 1)
+						//result += length;
+					if(length >= B.X)
+						return B.X*B.X;
 					length = 0;
 				}
 			}
-			if(length > 1)
-				result += length;
-			//if(length >= B.X)
-				//return (int) Math.pow(winMultiplier, B.X);
+			//if(length > 1)
+				//result += length;
+			if(length >= B.X)
+				return B.X*B.X;
 		}
-		return (int) Math.pow(resultMultiplier, result);
+		return 0;//return result*(result-1);
 	}
 
 	private int diagonalManager(CXBoard B, CXCellState player) {//Serve un disegno per capire sta funzione mi sa
@@ -390,21 +411,21 @@ public class LStephens implements CXPlayer {
 				if(C[i][j] != CXCellState.FREE)
 					if(length > 2)
 						length--;
-				if(length > 1)
-					result += length;
-				//if(length >= B.X)
-					//return (int) Math.pow(winMultiplier, B.X);
+				//if(length > 1)
+					//result += length;
+				if(length >= B.X)
+					return B.X*B.X;
 				length = 0;
 			}
 			i--;
 			j++;
 		}
-		if(length > 1)
-			result += length;
-		//if(length >= B.X)
-			//return (int) Math.pow(winMultiplier, B.X);
+		//if(length > 1)
+			//result += length;
+		if(length >= B.X)
+			return B.X*B.X;
 		
-		return (int) Math.pow(resultMultiplier, result);
+		return 0;//return result*(result-1);
 	}
 
 	private int diagonalUpRight(CXBoard B, int row, int col, CXCellState player) {
@@ -420,21 +441,21 @@ public class LStephens implements CXPlayer {
 				if(C[i][j] != CXCellState.FREE)
 					if(length > 2)
 						length--;
-				if(length > 1)
-					result += length;
-				//if(length >= B.X)
-					//return (int) Math.pow(winMultiplier, B.X);
+				//if(length > 1)
+				//	result += length;
+				if(length >= B.X)
+					return B.X*B.X;
 				length = 0;
 			}
 			i--;
 			j--;
 		}
-		if(length > 1)
-			result += length;
-		//if(length >= B.X)
-			//return (int) Math.pow(winMultiplier, B.X);
+		//if(length > 1)
+		//	result += length;
+		if(length >= B.X)
+			return B.X*B.X;
 		
-		return (int) Math.pow(resultMultiplier, result);
+		return 0;//return result*(result-1);
 	}
 	
 
