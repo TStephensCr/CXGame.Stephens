@@ -68,13 +68,13 @@ public class LStephens implements CXPlayer {
         try {
             int col = singleMoveWin(B, L);
             if (col != -1){
-				System.err.println("Winning column found: "+col);
+				//System.err.println("Winning column found: "+col);
 				return col;
 			}
 
             col = singleMoveBlock(B, L);
             if (col != -1){
-				System.err.println("Blocking column found: "+col);
+				//System.err.println("Blocking column found: "+col);
 				return col;
 			}
 			checktime();
@@ -90,9 +90,9 @@ public class LStephens implements CXPlayer {
 				if(B.fullColumn(columnOrder[x]))
 					continue;
 				B.markColumn(columnOrder[x]);
-				System.err.println("Marking column "+columnOrder[x]+" from main");
+				//System.err.println("Marking column "+columnOrder[x]+" from main");
 				albe = alphaBetaSearch(B, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, first, 1);
-				System.err.println("Column "+columnOrder[x]+" has value "+albe);
+				//System.err.println("Column "+columnOrder[x]+" has value "+albe);
 				if(first){
 					if(albe > tmp){
 						tmp = albe;
@@ -107,21 +107,21 @@ public class LStephens implements CXPlayer {
 				}
 				B.unmarkColumn();
 			}
-			System.err.println("Selected column "+col+" with value "+tmp);
+			//System.err.println("Selected column "+col+" with value "+tmp);
             if (col != -1) {
 				if(B.fullColumn(col)) {
-					System.err.println("Column "+col+" is full");
+					//System.err.println("Column "+col+" is full");
 					return save;
 				}
 				else if(!blackList[col])
 					return col;
 				else {
-					System.err.println("Column "+col+" is blacklisted");
+					//System.err.println("Column "+col+" is blacklisted");
 					return save;
 				}
 			} 
 			else {
-				System.err.println("No column found");
+				//System.err.println("No column found");
 				return save;
 			}
         } catch (TimeoutException e) {
@@ -246,7 +246,7 @@ public class LStephens implements CXPlayer {
 					if(beta <= alpha)
 						break;
 				}
-				System.err.println("Best value with curDepth at "+curDepth+" is "+maxEval);
+				//System.err.println("Best value with curDepth at "+curDepth+" is "+maxEval);
 				return maxEval;
 			}else{
 				int minEval = Integer.MAX_VALUE;
@@ -264,7 +264,7 @@ public class LStephens implements CXPlayer {
 					if(beta <= alpha)
 						break;
 				}
-				System.err.println("Best value with curDepth at "+curDepth+" is "+minEval);
+				//System.err.println("Best value with curDepth at "+curDepth+" is "+minEval);
 				return minEval;
 			} 
 		}
@@ -283,8 +283,8 @@ public class LStephens implements CXPlayer {
 	public int evaluateBoard(CXBoard B, int curDepth) throws TimeoutException{
 		try{
 			checktime();
-			int player1Score = calculatePlayerScore(B, CXCellState.P1);
-			int player2Score = calculatePlayerScore(B, CXCellState.P2);
+			//int player1Score = calculatePlayerScore(B, CXCellState.P1);
+			//int player2Score = calculatePlayerScore(B, CXCellState.P2);
 			//System.err.println("Player 1 score: "+player1Score);
 			//System.err.println("Player 2 score: "+player2Score);
 
@@ -292,7 +292,10 @@ public class LStephens implements CXPlayer {
 			player1Score += depthBonus;
 			player2Score += depthBonus;*/
 
-			return player1Score - player2Score;
+			//return player1Score - player2Score;
+
+			return evaluateHeuristic(B);
+
 		}catch(TimeoutException e){
 			System.err.println("Timeout in evaluateBoard");
 			return 0;
@@ -334,16 +337,16 @@ public class LStephens implements CXPlayer {
 					//if(length > 1)
 						//result += length;
 					if(length >= B.X)
-						return B.X*B.X;
+						return 1000000;
 					length = 0;
 				}
 			}
-			//if(length > 1)
-				//result += length;
+			if(length > 1)
+				result += length;
 			if(length >= B.X)
-				return B.X*B.X;
+				return 1000000;
 		}
-		return 0;//return result*(result-1);
+		return result*(result-1);
 	}
 
 	private int verticalScore(CXBoard B, CXCellState player) {
@@ -359,19 +362,19 @@ public class LStephens implements CXPlayer {
 					if(C[j][i] != CXCellState.FREE)
 						if(length >= 2)
 							length--;
-					//if(length > 1)
-						//result += length;
+					if(length > 1)
+						result += length;
 					if(length >= B.X)
-						return B.X*B.X;
+						return 1000000;
 					length = 0;
 				}
 			}
-			//if(length > 1)
-				//result += length;
+			if(length > 1)
+				result += length;
 			if(length >= B.X)
-				return B.X*B.X;
+				return 1000000;
 		}
-		return 0;//return result*(result-1);
+		return result*(result-1);
 	}
 
 	private int diagonalManager(CXBoard B, CXCellState player) {//Serve un disegno per capire sta funzione mi sa
@@ -411,21 +414,21 @@ public class LStephens implements CXPlayer {
 				if(C[i][j] != CXCellState.FREE)
 					if(length > 2)
 						length--;
-				//if(length > 1)
-					//result += length;
+				if(length > 1)
+					result += length;
 				if(length >= B.X)
-					return B.X*B.X;
+					return 1000000;
 				length = 0;
 			}
 			i--;
 			j++;
 		}
-		//if(length > 1)
-			//result += length;
+		if(length > 1)
+			result += length;
 		if(length >= B.X)
-			return B.X*B.X;
+			return 1000000;
 		
-		return 0;//return result*(result-1);
+		return result*(result-1);
 	}
 
 	private int diagonalUpRight(CXBoard B, int row, int col, CXCellState player) {
@@ -441,22 +444,186 @@ public class LStephens implements CXPlayer {
 				if(C[i][j] != CXCellState.FREE)
 					if(length > 2)
 						length--;
-				//if(length > 1)
-				//	result += length;
+				if(length > 1)
+					result += length;
 				if(length >= B.X)
-					return B.X*B.X;
+					return 1000000;
 				length = 0;
 			}
 			i--;
 			j--;
 		}
-		//if(length > 1)
-		//	result += length;
+		if(length > 1)
+			result += length;
 		if(length >= B.X)
-			return B.X*B.X;
+			return 1000000;
 		
-		return 0;//return result*(result-1);
+		return result*(result-1);
 	}
+
+
+
+	private int evaluateHeuristic(CXBoard localB) {
+		CXCellState[][] C = localB.getBoard();
+
+		int evalRow = 0;
+		int evalCol = 0;
+		int evalDiag = 0;
+
+		// Valutazione righe  (suppongo M=7,N=7,X=5)
+		for (int i = 0; i < localB.M; i++) {                  // per ogni riga  (7 righe)
+		for (int j = 0; j <= localB.N - localB.X; j++) {      // per ogni colonna da 0 a N-X    (0 - 7-5=2)
+			int countPlayer = 0;    // celle del giocatore  
+			int countOpponent = 0;  // celle dell'avversario
+			int countFree = 0;      // celle libere
+
+			/* analizza tutte le possibili sequenze di 5 gettoni nella riga corrente */
+			for (int x = 0; x < localB.X; x++) {                  // per ogni x da 0 a X-1     (0 - 4  ->  j=0: 0,1,2,3,4 -> j=1:1,2,3,4,5 -> j=2:2,3,4,5,6)
+			CXCellState cellState = C[i][j + x];          // controlla il giocatore di appartenenza di ogni cella e incrementa il contatore relativo
+
+			if (cellState == CXCellState.P1)
+				countPlayer++;
+			else if (cellState == CXCellState.FREE)
+				countFree++;
+			else
+				countOpponent++;
+			}
+
+			// valuta la riga basandosi sul numero di celle 
+			if (countPlayer > 0 && countOpponent == 0)                    // ci sono solo dei gettoni del giocatore, 0 dell'avversario
+			evalRow += countPlayer * countPlayer * countPlayer;             // incrementa il valore della riga
+			else if (countOpponent > 0 && countPlayer == 0)               // ci sono solo dei gettoni dell'avversario, 0 del giocatore
+			evalRow -= countOpponent * countOpponent * countOpponent;       // decrementa il valore della riga
+
+			// bonus se ci sono celle libere nella riga
+			evalRow += countFree;
+		}
+		}
+
+		// Valutazione colonne
+		for (int i = 0; i <= localB.M - localB.X; i++) {
+		for (int j = 0; j < localB.N; j++) {
+			int countPlayer = 0;    // celle del giocatore  
+			int countOpponent = 0;  // celle dell'avversario
+			int countFree = 0;      // celle libere
+
+			/* analizza tutte le possibili sequenze di 5 gettoni nella colonna corrente */
+			for (int x = 0; x < localB.X; x++) {
+			CXCellState cellState = C[i + x][j];    // controlla il giocatore di appartenenza di ogni cella e incrementa il contatore relativo
+
+			if (cellState == CXCellState.P1)
+				countPlayer++;
+			else if (cellState == CXCellState.FREE)
+				countFree++;
+			else
+				countOpponent++;
+			}
+
+			// valuta la colonna basandosi sul numero di celle 
+			if (countPlayer > 0 && countOpponent == 0)                    // ci sono solo dei gettoni del giocatore, 0 dell'avversario
+			evalCol += countPlayer * countPlayer * countPlayer;             // incrementa il valore della colonna
+			else if (countOpponent > 0 && countPlayer == 0)               // ci sono solo dei gettoni dell'avversario, 0 del giocatore
+			evalCol -= countOpponent * countOpponent * countOpponent;       // decrementa il valore della colonna
+
+			// bonus se ci sono celle libere nella colonna
+			evalCol += countFree;
+		}
+		}
+
+		// Valutazione diagonali  (suppongo M=7,N=7,X=5)
+		for (int i = 0; i <= localB.M - localB.X; i++) {        // righe da 0 a M-X       (0 - 7-5=2)
+		for (int j = 0; j <= localB.N - localB.X; j++) {      // colonne da 0 a N-X     (0 - 7-5=2)
+			int countPlayer = 0;    // celle del giocatore  
+			int countOpponent = 0;  // celle dell'avversario
+			int countFree = 0;      // celle libere
+
+			/* analizza tutte le possibili sequenze di 5 gettoni diagonali sulla matrice */
+			for (int x = 0; x < localB.X; x++) {          // per ogni x da 0 a X-1     (0 - 4  ->  j=0:0,1,2,3,4 -> j=1:1,2,3,4,5 -> j=2:2,3,4,5,6
+														//                                       i=0:0,1,2,3,4 -> i=1:1,2,3,4,5 -> i=2:2,3,4,5,6)
+			CXCellState cellState = C[i + x][j + x];
+
+			if (cellState == CXCellState.P1)
+				countPlayer++;
+			else if (cellState == CXCellState.FREE)
+				countFree++;
+			else
+				countOpponent++;
+			}
+
+			// valuta la diagonale basandosi sul numero di celle 
+			if (countPlayer > 0 && countOpponent == 0)                    // ci sono solo dei gettoni del giocatore, 0 dell'avversario
+			evalDiag += countPlayer * countPlayer * countPlayer;             // incrementa il valore della diagonale
+			else if (countOpponent > 0 && countPlayer == 0)               // ci sono solo dei gettoni dell'avversario, 0 del giocatore
+			evalDiag -= countOpponent * countOpponent * countOpponent;       // decrementa il valore della diagonale
+
+			// bonus se ci sono celle libere nella diagonale
+			evalDiag += countFree;
+		}
+		}
+
+		// Valutazione diagonali inverse  (suppongo M=7,N=7,X=5)
+		for (int i = localB.X - 1; i < localB.M; i++) {         // righe da X-1 a M-1   (5-1=4 - 6)
+		for (int j = 0; j <= localB.N - localB.X; j++) {      // colonne da 0 a N-X   (0 - 7-5=2)
+			int countPlayer = 0;    // celle del giocatore  
+			int countOpponent = 0;  // celle dell'avversario
+			int countFree = 0;      // celle libere
+
+			/* analizza tutte le possibili sequenze di 5 gettoni diagonali inverse sulla matrice */
+			for (int x = 0; x < localB.X; x++) {                    // per ogni x da 0 a X-1     (0 - 4  ->  j=0:0,1,2,3,4 -> j=1:1,2,3,4,5 -> j=2:2,3,4,5,6
+																	//                                       i=4:4,3,2,1,0 -> i=5:4,3,2,1,0 -> i=6:4,3,2,1,0)
+			CXCellState cellState = C[i - x][j + x];
+
+			if (cellState == CXCellState.P1)
+				countPlayer++;
+			else if (cellState == CXCellState.FREE)
+				countFree++;
+			else
+				countOpponent++;
+			}
+
+			// valuta la diagonale inversa basandosi sul numero di celle 
+			if (countPlayer > 0 && countOpponent == 0)                    // ci sono solo dei gettoni del giocatore, 0 dell'avversario
+			evalDiag += countPlayer * countPlayer * countPlayer;             // incrementa il valore della diagonale
+			else if (countOpponent > 0 && countPlayer == 0)               // ci sono solo dei gettoni dell'avversario, 0 del giocatore
+			evalDiag -= countOpponent * countOpponent * countOpponent;       // decrementa il valore della diagonale
+
+			// bonus se ci sono celle libere nella diagonale
+			evalDiag += countFree;
+		}
+		}
+
+		// il valore totale corrisponde alla somma delle valutazioni di righe, colonne e diagonali
+		int eval = evalRow + evalCol + evalDiag;
+
+		return eval;
+	}
+
+	private int evaluateBoard(CXBoard B, int type) {
+		CXCellState[][] C = B.getBoard();
+		int countP1 = 0;
+		int countP2 = 0;
+		int countFree = 0;
+
+		switch(type){
+			case 0://Horizontal
+				int outer = B.M;
+				int inner = B.N - B.X;
+				int offsetI = 0;
+				int offsetJ = 1;
+				break;
+			case 1://Vertical
+				int outer = B.M - B.X;
+				int inner = B.N;
+				int offsetI = 1;
+				int offsetJ = 0;
+				break;
+			case 2://Diagonal
+				//DECIDERE SE CONSEGNARE QUESTA EVALUATION O LA MIA
+		}
+	}
+
+
+
 	
 
     private static boolean isValidPosition(CXBoard B, int row, int col) {
