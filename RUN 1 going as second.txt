@@ -1,0 +1,94 @@
+RUN 1
+going as second
+W:10 D:18 L:7
+
+
+RUN 2
+going as second
+W:18 D:14 L:3
+
+RUN 3
+going as first
+W:15 D:14 L:6
+
+RUN 4
+going as first
+W:10 D:17 L:8
+
+RUN 5(new evaluation)
+going as first
+W:22 D:11 L:3
+
+RUN 6(new evaluation)
+going as second
+W:8 D:24 L:4
+
+
+
+BOTTOM FRAGGER ERA(ORIGINAL EVALUATION)
+
+RUN 1   //DA TRASCURARE, MANCAVANO PEZZI DI CODICE
+going second
+W:7 D:21 L:7
+
+RUN 2   //DA TRASCURARE, MANCAVANO PEZZI DI CODICE
+going first
+W:12 D:17 L:6
+
+RUN 3   //DA TRASCURARE, MANCAVANO PEZZI DI CODICE
+going second
+W:14 D:18 :3
+
+RUN 1
+going second
+W:11 D:18 L:6
+
+RUN 2
+going second
+W:10 D:19 L:6
+
+
+
+WITH POINTS FOR MIDDLE MOVES FROM NOW
+
+RUN 1
+going second
+W:6 D:18 L:11
+
+RUN 2
+going second
+W:8 D:20 L:7
+
+RUN 3
+going first
+W:19 D:11 L:5
+
+RUN 4
+going first
+W:17 D:12 L: 6
+CENTRAL POINTS WINS
+
+
+NO CENTRAL POINTS
+going second
+W:11 D:18 L:6
+
+NO CENTRAL POINTS
+going second
+W:9 D:14 L:12
+
+NO CENTRAL POINTS
+going second
+W:11 D:17 L:7
+
+NO CENTRAL POINTS
+going first
+W:15 D:17 L:3
+
+NO CENTRAL POINTS
+going first
+W:14 D:14 L:7
+
+NO CENTRAL POINTS
+going first
+W:16 D:13 L:6
