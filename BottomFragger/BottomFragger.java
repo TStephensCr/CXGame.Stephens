@@ -301,7 +301,6 @@ public class BottomFragger implements CXPlayer {
 
 	private int calculatePlayerScore(CXBoard B, CXCellState player) throws TimeoutException{
 		int playerScore = 0;
-		CXCell[] MC = B.getMarkedCells();
 		try{
 			checktime();
 
